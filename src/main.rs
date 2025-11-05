@@ -216,7 +216,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Player not found".into());
     };
     
-    let player_name = match player_type {
+    let _player_name = match player_type {
         PlayerType::Ffplay => "ffplay",
         PlayerType::Mpv => "mpv",
         PlayerType::Afplay => "curl + afplay",
@@ -400,86 +400,82 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                              drop(vol);
                              draw_ui(&mut terminal, &ui_state, STATIONS);
                          }
-                         KeyCode::F(7) | KeyCode::Left => {
-                             if !STATIONS.is_empty() {
-                                 let vol = volume_control.lock().await;
-                                 let current_vol = vol.volume;
-                                 let is_muted = vol.muted;
-                                 let player_type = vol.player_type;
-                                 drop(vol);
+                          KeyCode::F(7) | KeyCode::Left => {
+                              let vol = volume_control.lock().await;
+                              let current_vol = vol.volume;
+                              let is_muted = vol.muted;
+                              let player_type = vol.player_type;
+                              drop(vol);
 
-                                 station_index = if station_index == 0 { STATIONS.len() - 1 } else { station_index - 1 };
-                                 stream_url = STATIONS[station_index].url;
+                              station_index = if station_index == 0 { STATIONS.len() - 1 } else { station_index - 1 };
+                              stream_url = STATIONS[station_index].url;
 
-                                 let _ = child.start_kill();
-                                 let _ = tokio::time::timeout(
-                                     tokio::time::Duration::from_millis(500),
-                                     child.wait()
-                                 ).await;
-                                 let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
-                                 if let Some(s) = new_socket {
-                                     let mut vol = volume_control.lock().await;
-                                     vol.mpv_socket = Some(s);
-                                     drop(vol);
-                                 }
-                                 child = TokioCommand::new(&cmd)
-                                     .args(&args)
-                                     .stdout(Stdio::null())
-                                     .stderr(Stdio::null())
-                                     .spawn()?;
+                              let _ = child.start_kill();
+                              let _ = tokio::time::timeout(
+                                  tokio::time::Duration::from_millis(500),
+                                  child.wait()
+                              ).await;
+                              let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
+                              if let Some(s) = new_socket {
+                                  let mut vol = volume_control.lock().await;
+                                  vol.mpv_socket = Some(s);
+                                  drop(vol);
+                              }
+                              child = TokioCommand::new(&cmd)
+                                  .args(&args)
+                                  .stdout(Stdio::null())
+                                  .stderr(Stdio::null())
+                                  .spawn()?;
 
-                                 if is_muted {
-                                     let mut vol = volume_control.lock().await;
-                                     vol.muted = true;
-                                     drop(vol);
-                                     let vol2 = volume_control.lock().await;
-                                     let _ = vol2.apply_mute(&mut child).await;
-                                     drop(vol2);
-                                 }
-                                 ui_state.station_index = station_index;
-                                 draw_ui(&mut terminal, &ui_state, STATIONS);
-                             }
-                         }
-                         KeyCode::F(9) | KeyCode::Right => {
-                             if !STATIONS.is_empty() {
-                                 let vol = volume_control.lock().await;
-                                 let current_vol = vol.volume;
-                                 let is_muted = vol.muted;
-                                 let player_type = vol.player_type;
-                                 drop(vol);
+                              if is_muted {
+                                  let mut vol = volume_control.lock().await;
+                                  vol.muted = true;
+                                  drop(vol);
+                                  let vol2 = volume_control.lock().await;
+                                  let _ = vol2.apply_mute(&mut child).await;
+                                  drop(vol2);
+                              }
+                              ui_state.station_index = station_index;
+                              draw_ui(&mut terminal, &ui_state, STATIONS);
+                          }
+                          KeyCode::F(9) | KeyCode::Right => {
+                              let vol = volume_control.lock().await;
+                              let current_vol = vol.volume;
+                              let is_muted = vol.muted;
+                              let player_type = vol.player_type;
+                              drop(vol);
 
-                                 station_index = (station_index + 1) % STATIONS.len();
-                                 stream_url = STATIONS[station_index].url;
+                              station_index = (station_index + 1) % STATIONS.len();
+                              stream_url = STATIONS[station_index].url;
 
-                                 let _ = child.start_kill();
-                                 let _ = tokio::time::timeout(
-                                     tokio::time::Duration::from_millis(500),
-                                     child.wait()
-                                 ).await;
-                                 let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
-                                 if let Some(s) = new_socket {
-                                     let mut vol = volume_control.lock().await;
-                                     vol.mpv_socket = Some(s);
-                                     drop(vol);
-                                 }
-                                 child = TokioCommand::new(&cmd)
-                                     .args(&args)
-                                     .stdout(Stdio::null())
-                                     .stderr(Stdio::null())
-                                     .spawn()?;
+                              let _ = child.start_kill();
+                              let _ = tokio::time::timeout(
+                                  tokio::time::Duration::from_millis(500),
+                                  child.wait()
+                              ).await;
+                              let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
+                              if let Some(s) = new_socket {
+                                  let mut vol = volume_control.lock().await;
+                                  vol.mpv_socket = Some(s);
+                                  drop(vol);
+                                  }
+                              child = TokioCommand::new(&cmd)
+                                  .args(&args)
+                                  .stdout(Stdio::null())
+                                  .stderr(Stdio::null())
+                                  .spawn()?;
 
-                                 if is_muted {
-                                     let mut vol = volume_control.lock().await;
-                                     vol.muted = true;
-                                     drop(vol);
-                                     let vol2 = volume_control.lock().await;
-                                     let _ = vol2.apply_mute(&mut child).await;
-                                     drop(vol2);
-                                 }
-                                 ui_state.station_index = station_index;
-                                 draw_ui(&mut terminal, &ui_state, STATIONS);
-                             }
-                         }
+                              if is_muted {
+                                  let mut vol = volume_control.lock().await;
+                                  vol.muted = true;
+                                  drop(vol);
+                                  let vol2 = volume_control.lock().await;
+                                  let _ = vol2.apply_mute(&mut child).await;
+                                  drop(vol2);
+                              }
+                              ui_state.station_index = station_index;
+                              draw_ui(&mut terminal, &ui_state, STATIONS);
+                          }
                          KeyCode::F(8) => {
                              // Play/Pause as mute toggle
                              let mut vol = volume_control.lock().await;
@@ -488,10 +484,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                              let player_type = vol.player_type;
                              drop(vol);
 
-                             let vol = volume_control.lock().await;
-                             let needs_restart = vol.apply_mute(&mut child).await.is_err();
-                             let player_type2 = vol.player_type;
-                             drop(vol);
+                              let vol = volume_control.lock().await;
+                              let needs_restart = vol.apply_mute(&mut child).await.is_err();
+                              let _player_type = vol.player_type;
+                              drop(vol);
 
                              if needs_restart {
                                  let _ = child.start_kill();
@@ -499,7 +495,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                      tokio::time::Duration::from_millis(500),
                                      child.wait()
                                  ).await;
-                                 let (cmd, args, new_socket) = build_player_args(player_type2, stream_url, target_vol);
+                                  let (cmd, args, new_socket) = build_player_args(player_type, stream_url, target_vol);
                                  if let Some(s) = new_socket {
                                      let mut vol = volume_control.lock().await;
                                      vol.mpv_socket = Some(s);
@@ -690,84 +686,80 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             draw_ui(&mut terminal, &ui_state, STATIONS);
                         }
                         KeyCode::F(7) | KeyCode::Left => {
-                            if !STATIONS.is_empty() {
+                            let mut vol = volume_control.lock().await;
+                            let current_vol = vol.volume;
+                            let is_muted = vol.muted;
+                            let player_type = vol.player_type;
+                            drop(vol);
+
+                            station_index = if station_index == 0 { STATIONS.len() - 1 } else { station_index - 1 };
+                            stream_url = STATIONS[station_index].url;
+
+                            let _ = child.start_kill();
+                            let _ = tokio::time::timeout(
+                                tokio::time::Duration::from_millis(500),
+                                child.wait()
+                            ).await;
+                            let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
+                            if let Some(s) = new_socket {
                                 let mut vol = volume_control.lock().await;
-                                let current_vol = vol.volume;
-                                let is_muted = vol.muted;
-                                let player_type = vol.player_type;
+                                vol.mpv_socket = Some(s);
                                 drop(vol);
-
-                                station_index = if station_index == 0 { STATIONS.len() - 1 } else { station_index - 1 };
-                                stream_url = STATIONS[station_index].url;
-
-                                let _ = child.start_kill();
-                                let _ = tokio::time::timeout(
-                                    tokio::time::Duration::from_millis(500),
-                                    child.wait()
-                                ).await;
-                                let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
-                                if let Some(s) = new_socket {
-                                    let mut vol = volume_control.lock().await;
-                                    vol.mpv_socket = Some(s);
-                                    drop(vol);
-                                }
-                                child = TokioCommand::new(&cmd)
-                                    .args(&args)
-                                    .stdout(Stdio::null())
-                                    .stderr(Stdio::null())
-                                    .spawn()?;
-
-                                if is_muted {
-                                    let mut vol = volume_control.lock().await;
-                                    vol.muted = true;
-                                    drop(vol);
-                                    let vol2 = volume_control.lock().await;
-                                    let _ = vol2.apply_mute(&mut child).await;
-                                    drop(vol2);
-                                }
-                                ui_state.station_index = station_index;
-                                draw_ui(&mut terminal, &ui_state, STATIONS);
                             }
+                            child = TokioCommand::new(&cmd)
+                                .args(&args)
+                                .stdout(Stdio::null())
+                                .stderr(Stdio::null())
+                                .spawn()?;
+
+                            if is_muted {
+                                let mut vol = volume_control.lock().await;
+                                vol.muted = true;
+                                drop(vol);
+                                let vol2 = volume_control.lock().await;
+                                let _ = vol2.apply_mute(&mut child).await;
+                                drop(vol2);
+                            }
+                            ui_state.station_index = station_index;
+                            draw_ui(&mut terminal, &ui_state, STATIONS);
                         }
                         KeyCode::F(9) | KeyCode::Right => {
-                            if !STATIONS.is_empty() {
+                            let mut vol = volume_control.lock().await;
+                            let current_vol = vol.volume;
+                            let is_muted = vol.muted;
+                            let player_type = vol.player_type;
+                            drop(vol);
+
+                            station_index = (station_index + 1) % STATIONS.len();
+                            stream_url = STATIONS[station_index].url;
+
+                            let _ = child.start_kill();
+                            let _ = tokio::time::timeout(
+                                tokio::time::Duration::from_millis(500),
+                                child.wait()
+                            ).await;
+                            let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
+                            if let Some(s) = new_socket {
                                 let mut vol = volume_control.lock().await;
-                                let current_vol = vol.volume;
-                                let is_muted = vol.muted;
-                                let player_type = vol.player_type;
+                                vol.mpv_socket = Some(s);
                                 drop(vol);
-
-                                station_index = (station_index + 1) % STATIONS.len();
-                                stream_url = STATIONS[station_index].url;
-
-                                let _ = child.start_kill();
-                                let _ = tokio::time::timeout(
-                                    tokio::time::Duration::from_millis(500),
-                                    child.wait()
-                                ).await;
-                                let (cmd, args, new_socket) = build_player_args(player_type, stream_url, current_vol);
-                                if let Some(s) = new_socket {
-                                    let mut vol = volume_control.lock().await;
-                                    vol.mpv_socket = Some(s);
-                                    drop(vol);
-                                }
-                                child = TokioCommand::new(&cmd)
-                                    .args(&args)
-                                    .stdout(Stdio::null())
-                                    .stderr(Stdio::null())
-                                    .spawn()?;
-
-                                if is_muted {
-                                    let mut vol = volume_control.lock().await;
-                                    vol.muted = true;
-                                    drop(vol);
-                                    let vol2 = volume_control.lock().await;
-                                    let _ = vol2.apply_mute(&mut child).await;
-                                    drop(vol2);
-                                }
-                                ui_state.station_index = station_index;
-                                draw_ui(&mut terminal, &ui_state, STATIONS);
                             }
+                            child = TokioCommand::new(&cmd)
+                                .args(&args)
+                                .stdout(Stdio::null())
+                                .stderr(Stdio::null())
+                                .spawn()?;
+
+                            if is_muted {
+                                let mut vol = volume_control.lock().await;
+                                vol.muted = true;
+                                drop(vol);
+                                let vol2 = volume_control.lock().await;
+                                let _ = vol2.apply_mute(&mut child).await;
+                                drop(vol2);
+                            }
+                            ui_state.station_index = station_index;
+                            draw_ui(&mut terminal, &ui_state, STATIONS);
                         }
                         KeyCode::F(8) | KeyCode::F(12) | KeyCode::Char('m') | KeyCode::Char('M') => {
                             let mut vol = volume_control.lock().await;
