@@ -1,0 +1,12 @@
+[package]
+name = "lofi_rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+chrono = "0.4"
+crossterm = "0.28"
+tokio-util = { version = "0.7", features = ["codec"] }
+nix = { version = "0.28", features = ["process", "signal"] }
+ratatui = "0.26"
