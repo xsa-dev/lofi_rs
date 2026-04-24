@@ -11,11 +11,25 @@ use std::time::Duration;
 pub struct Station {
     pub name: &'static str,
     pub url: &'static str,
+    pub metadata_url: Option<&'static str>,
 }
 
 pub const STATIONS: &[Station] = &[
-    Station { name: "Lofi 1", url: "https://stream.zeno.fm/0r0xa792kwzuv" },
-    Station { name: "Lofi 2", url: "https://stream.zeno.fm/v5reddyk8rhvv" },
+    Station {
+        name: "Lofi 1",
+        url: "https://stream.zeno.fm/0r0xa792kwzuv",
+        metadata_url: None,
+    },
+    Station {
+        name: "Lofi 2",
+        url: "https://stream.zeno.fm/v5reddyk8rhvv",
+        metadata_url: None,
+    },
+    Station {
+        name: "Code Radio",
+        url: "https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3",
+        metadata_url: Some("https://coderadio-admin-v2.freecodecamp.org/api/nowplaying/coderadio"),
+    },
 ];
 
 pub struct UiState {
@@ -23,6 +37,7 @@ pub struct UiState {
     pub volume: u32,
     pub muted: bool,
     pub elapsed: Duration,
+    pub now_playing: Option<String>,
 }
 
 impl UiState {
@@ -32,6 +47,7 @@ impl UiState {
             volume: 70,
             muted: false,
             elapsed: Duration::ZERO,
+            now_playing: None,
         }
     }
 }
@@ -48,6 +64,7 @@ pub fn draw_ui<B: Backend>(
                 .direction(Direction::Vertical)
                 .constraints([
                     Constraint::Length(stations.len() as u16 + 2),
+                    Constraint::Length(3),
                     Constraint::Length(3),
                     Constraint::Min(0),
                 ])
@@ -98,11 +115,25 @@ pub fn draw_ui<B: Backend>(
                 .block(Block::default().borders(Borders::ALL).title("Status"));
             f.render_widget(status, chunks[1]);
 
+            // Now Playing
+            let has_meta = stations
+                .get(state.station_index)
+                .and_then(|s| s.metadata_url)
+                .is_some();
+            let np_text: &str = match state.now_playing.as_deref() {
+                Some(s) => s,
+                None if has_meta => "Loading...",
+                None => "—",
+            };
+            let now_playing = Paragraph::new(np_text)
+                .block(Block::default().borders(Borders::ALL).title("Now Playing"));
+            f.render_widget(now_playing, chunks[2]);
+
             // Controls
             let controls_text = "Controls:\nF11: Vol Up | F10: Vol Down | F12: Mute\nF7: Prev Station | F9: Next Station | F8: Play/Pause\nq: Quit";
             let controls = Paragraph::new(controls_text)
                 .block(Block::default().borders(Borders::ALL).title("Controls"));
-            f.render_widget(controls, chunks[2]);
+            f.render_widget(controls, chunks[3]);
         })
         .unwrap();
 }
